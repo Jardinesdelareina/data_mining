@@ -36,6 +36,33 @@ count = 0
 
 dish_dict = []
 
+def scrap_data(url):
+    global count
+    req = requests.get(url=url, headers=headers)
+    soup = BeautifulSoup(req.text, 'lxml')
+    dishes = soup.find_all(class_='catalog-section-item-wrapper')
+
+    for i in dishes:
+        title = i.find('div', class_='intec-cl-text-hover').text.strip()
+        try:
+            description = i.find('div', class_='catalog-section-item-description').text.strip()
+        except:
+            description = '---'
+        price = i.find('div', class_='catalog-section-item-price-base').text.replace('₽', '').strip()
+
+        result_data = {
+            'title': title,
+            'description': description,
+            'price': price,
+        }
+        dish_dict.append(result_data)
+
+        count += 1
+        print(count, key)
+    with open(f'data/{key.lower()}.json', 'w', encoding='utf-8') as file:
+        json.dump(dish_dict, file, indent=4, ensure_ascii=False)
+
+
 for key, value in cat.items():
     req = requests.get(url=value, headers=headers)
     soup = BeautifulSoup(req.text, 'lxml')
@@ -44,37 +71,6 @@ for key, value in cat.items():
         pages_count = pagination.find_previous().text
         for page in range(1, int(pages_count) + 1):
             url_pagination = f'{value}?PAGEN_1={page}'
-            req = requests.get(url=url_pagination, headers=headers)
-            soup = BeautifulSoup(req.text, 'lxml')
-            dishes = soup.find_all(class_='catalog-section-item-wrapper')
-
-            for i in dishes:
-                image = url.replace('/catalog', '') + i.find('img').get('src')
-                title = i.find('div', class_='intec-cl-text-hover').text.strip()
-                try:
-                    description = i.find('div', class_='catalog-section-item-description').text.strip()
-                except:
-                    description = '---'
-                price = i.find('div', class_='catalog-section-item-price-base').text.replace('₽', '').strip()
-
-                dish_dict = {
-                    'image': image,
-                    'title': title,
-                    'description': description,
-                    'price': price,
-                }
-
-                count += 1
-                print(count, key)
-                with open(f'data/{key.lower()}.json', 'w', encoding='utf-8') as file:
-                    json.dump(dish_dict, file, indent=4, ensure_ascii=False)
-                
-                
-                
-
-
-
-
-          
-
-                
+            scrap_data(url=url_pagination)
+    else:
+        scrap_data(url=value)
